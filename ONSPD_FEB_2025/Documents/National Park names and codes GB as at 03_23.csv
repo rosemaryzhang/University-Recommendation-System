@@ -1,0 +1,22 @@
+﻿NPARK22CD,NPARK22NM,NPARK22NMW
+E26000001,Dartmoor,
+E26000002,Exmoor,
+E26000004,Northumberland,
+E26000005,North York Moors,
+E26000006,Peak District,
+E26000007,The Broads,
+E26000009,New Forest,
+E26000010,South Downs,
+E26000011,Lake District,
+E26000012,Yorkshire Dales,
+E65000001,England (non-National Park),
+L99999999,(pseudo) Channel Islands,
+M99999999,(pseudo) Isle of Man,
+N99999999,(pseudo) Northern Ireland,
+S21000002,Loch Lomond and The Trossachs,
+S21000003,Cairngorms,
+S99999999,(pseudo) Scotland (non-National Park),
+W18000001,Brecon Beacons,Bannau Brycheiniog
+W18000002,Pembrokeshire Coast,Afordir Penfro
+W18000003,Snowdonia,Eryri
+W31000001,Wales (non-National Park),

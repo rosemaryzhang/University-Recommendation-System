@@ -14,14 +14,17 @@ coursesInfo = []
 scriptDir = os.path.dirname(os.path.abspath(__file__))
 csvFilePath = os.path.join(scriptDir, "courseURLs.csv")
 
-
 with open(csvFilePath, "r") as f:
+    id = 0
     courseURLs = csv.reader(f)
     for url in courseURLs:
         print("running")
         minTariff = 0
         maxTariff = 0
-
+        minALevel = ""
+        maxALevel = ""
+        id += 1
+        
         #Extract the data
         response = requests.get(url[0])
         print(url[0])
@@ -99,22 +102,25 @@ with open(csvFilePath, "r") as f:
 
         #Gather data
         courseInfo = {
+            'id': id,
             'uni': uni,
             'course': courseName,
             'minTariff': minTariff,
             'maxTariff': maxTariff,
-            'postcode': postcode
+            'postcode': postcode,
+            'minALevel': minALevel,
+            'maxALevel': maxALevel
         }
 
         print(courseInfo)
 
         coursesInfo.append(courseInfo)
 
-        time.sleep(2)
+        # time.sleep(2)
 
 #Write extracted data to csv
 with open(extractedDataFilePath, mode="w", newline="", encoding="utf-8") as file:
-    writer = csv.DictWriter(file, fieldnames=['uni', 'course', 'minTariff', 'maxTariff', 'postcode'])
+    writer = csv.DictWriter(file, fieldnames=['id', 'uni', 'course', 'minTariff', 'maxTariff', 'postcode', 'minALevel', 'maxALevel'])
 
     writer.writeheader()
 
