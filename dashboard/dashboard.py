@@ -52,16 +52,15 @@ def score_bar(score):
 coursesHTML = []
 n = 5 #top n recommendations
 
-for i in range(len(matchScores[0]) - 1, -1, -1):
-        print(i)
+for i in range(len(matchScores[0])):
         coursesHTML.append(
              html.Div([
-                  html.H1(f"{n - i}. University: " + matchingCourses.iloc[i]["uni"]),
+                  html.H1(f"{i + 1}. University: " + matchingCourses.iloc[i]["uni"]),
                   html.H2("Course: " + matchingCourses.iloc[i]["course"]),
                   html.H2("Postcode: " + matchingCourses.iloc[i]["postcode"]),
                   html.H2("Minimum A Level Grades: " + "".join(ast.literal_eval(matchingCourses.iloc[i]["minalevel"]))),
                   html.H2("Maximum A Level Grades: " + "".join(ast.literal_eval(matchingCourses.iloc[i]["maxalevel"]))),
-                  score_bar(round(matchScores[0][n - i - 1], 3))], 
+                  score_bar(round(matchScores[0][i], 3))], 
              style={
                   "font-family": "Verdana, Arial, Tahoma, Serif"
              })

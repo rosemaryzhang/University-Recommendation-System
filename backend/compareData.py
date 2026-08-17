@@ -7,13 +7,29 @@ import pandas as pd
 import os
 import re
 import math
+from InquirerPy import inquirer
 
 os.environ["HF_HUB_DISABLE_XET"] = "1"
 
 #User input
-userLocation = "East of England" #Only accept regions from uk
-userGrades = "BB"
-userCourse = "accounting and finance" #User course input
+userLocation = inquirer.select(message="Choose your location: ", choices=[
+    "London",
+    "South East",
+    "South West",
+    "East of England",
+    "West Midlands",
+    "East Midlands",
+    "Yorkshire and the Humber",
+    "North West",
+    "North East",
+    "Scotland",
+    "Wales",
+    "Northern Ireland",
+    "No Preference"
+]).execute() #Only accept regions from uk
+userGrades = inquirer.text(message="Enter your grades:", validate = lambda grades: (0 < len(re.findall(r'(?:A\*|[ABCDEU])', grades, re.IGNORECASE)) <= 4 and re.fullmatch(r'(?:A\*|[ABCDEU])+', grades, re.IGNORECASE)),
+                           invalid_message="Input cannot be empty and cannot exceed 4 A Level grades").execute().replace(" ", "").upper()
+userCourse = inquirer.text(message="Enter your course: ").execute() #User course input
 
 #-- Semantic search for Course name--
 #Courses to search for semantically
@@ -46,31 +62,25 @@ def semanticSearch(query: str, topk: int):
     #Search FAISS for the k nearest neighbors
     scores, indices = index.search(queryEmbedding, topk)
 
-    #Return results with scores and documents
+    #Return results with normalised scores and documents
     results = []
     for score, idx in zip(scores[0], indices[0]):
         results.append(
-            #"score": float(score),
-            #"similarity_pct": f"{score * 100:.1f}%",
             courses[idx]
         )
     
     return results, scores
 
 #Applying semantic search to query
-
 topk = 5 #Retrieve top 5 matches
 
 matchingCourses = semanticSearch(userCourse, topk)
-print(matchingCourses[0]) #names
 
 #Gather the other info for the matching courses
 
 #Import csv into SQL done in PostgreSQL
 
 #Read SQL table where the courses match result from semantic search
-
-#https://medium.com/itversity/integration-of-pandas-with-postgres-database-04789d3cf645
 
 connectionString = 'postgresql+pg8000://postgres:rosemary123@localhost:5432/uniRec'
 
@@ -164,11 +174,12 @@ matchingCoord = list(map(lambda x: regionQuantifier[x], matchingRegions)) #Coord
 
 #-- Compare the tariff points required
 #Convert user A Level grade to tariff
-grades = {"A*": 56, "A": 48, "B": 40, "C": 32, "D": 24, "E": 16}
+grades = {"A*": 56, "A": 48, "B": 40, "C": 32, "D": 24, "E": 16, "U": 0}
         
 userTariff = 0
+parsedUserGrades = re.findall(r'A\*|[ABCDEU]', userGrades, re.IGNORECASE)
 
-for i in userGrades:
+for i in parsedUserGrades:
     userTariff += grades[i]
 
 #user vector is form [avg tariff, N, E]
@@ -185,14 +196,10 @@ from sklearn.neighbors import BallTree
 tree = BallTree(matchingVectors, leaf_size=2, metric='euclidean')
 dist, ind = tree.query([userVector], k=3)
 #Display the top 5 matches
-# for i in ind[0]:
-#     print(matchingCoursesDf.iloc[i])
-print(matchingCoursesDf)
 
 #Write the matchingCourses to a csv
 matchingPath = os.path.join(currentDir, "../data/matchingCourses.csv")
 matchingCoursesDf.to_csv(matchingPath)
-
 
 #Get match score
 gradeDiff = [abs(userTariff - i) for i in matchingTariff] #Difference in grades
@@ -205,13 +212,11 @@ semanticScores = matchingCourses[1]
 
 #Calculate overall match scores
 #Weights
-#coursename:0.5, grade:0.2, location:0.3
-nameWeight = 0.5
-gradeWeight = 0.2
-locationWeight = 0.3
+nameWeight = 0.7
+gradeWeight = 0.15
+locationWeight = 0.15
 
 matchScores = [(nameWeight*semanticScores[i] + gradeWeight*gradeScores[i] + locationWeight*locationScores[i])*100 for i in range(len(semanticScores))]
-print(matchScores)
 
     
 
