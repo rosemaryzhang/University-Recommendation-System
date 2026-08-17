@@ -6,13 +6,14 @@ import numpy as np
 import pandas as pd
 import os
 import re
+import math
 
 os.environ["HF_HUB_DISABLE_XET"] = "1"
 
 #User input
-userLocation = "East of England"
-userGrades = "ABC"
-userCourse = "music" #User course input
+userLocation = "East of England" #Only accept regions from uk
+userGrades = "BB"
+userCourse = "accounting and finance" #User course input
 
 #-- Semantic search for Course name--
 #Courses to search for semantically
@@ -54,14 +55,14 @@ def semanticSearch(query: str, topk: int):
             courses[idx]
         )
     
-    return results
+    return results, scores
 
 #Applying semantic search to query
 
 topk = 5 #Retrieve top 5 matches
 
 matchingCourses = semanticSearch(userCourse, topk)
-print(matchingCourses)
+print(matchingCourses[0]) #names
 
 #Gather the other info for the matching courses
 
@@ -76,7 +77,7 @@ connectionString = 'postgresql+pg8000://postgres:rosemary123@localhost:5432/uniR
 #query the whole sql table
 fullSqlDf = pd.read_sql('courses', connectionString)
 
-matchingCoursesDf = fullSqlDf.loc[fullSqlDf['course'].isin(matchingCourses)] #dataframe where courses match semantic search
+matchingCoursesDf = fullSqlDf.loc[fullSqlDf['course'].isin(matchingCourses[0])] #dataframe where courses match semantic search
 
 #-- Compare grade requirements
 #Get the average tariff for each row
@@ -184,9 +185,33 @@ from sklearn.neighbors import BallTree
 tree = BallTree(matchingVectors, leaf_size=2, metric='euclidean')
 dist, ind = tree.query([userVector], k=3)
 #Display the top 5 matches
-for i in ind[0]:
-    print(matchingCoursesDf.iloc[i])
+# for i in ind[0]:
+#     print(matchingCoursesDf.iloc[i])
+print(matchingCoursesDf)
 
+#Write the matchingCourses to a csv
+matchingPath = os.path.join(currentDir, "../data/matchingCourses.csv")
+matchingCoursesDf.to_csv(matchingPath)
+
+
+#Get match score
+gradeDiff = [abs(userTariff - i) for i in matchingTariff] #Difference in grades
+gradeScores = [max(0, (1 - (i/40))) for i in gradeDiff] #Convert grade to a score
+
+locationDiff = [math.sqrt((matchingCoord[i][0] - userCoord[0])**2 + (matchingCoord[i][1] - userCoord[1])**2) for i in range(len(matchingCoord))] #Difference in location
+locationScores = [max(0, (1 - (i/5))) for i in locationDiff]
+
+semanticScores = matchingCourses[1]
+
+#Calculate overall match scores
+#Weights
+#coursename:0.5, grade:0.2, location:0.3
+nameWeight = 0.5
+gradeWeight = 0.2
+locationWeight = 0.3
+
+matchScores = [(nameWeight*semanticScores[i] + gradeWeight*gradeScores[i] + locationWeight*locationScores[i])*100 for i in range(len(semanticScores))]
+print(matchScores)
 
     
 
