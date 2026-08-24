@@ -1,5 +1,3 @@
-#https://medium.com/@purnima.msb/diy-semantic-search-a-step-by-step-guide-37e0b6df2a1f
-
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
@@ -31,11 +29,10 @@ userGrades = inquirer.text(message="Enter your grades:", validate = lambda grade
                            invalid_message="Input cannot be empty and cannot exceed 4 A Level grades").execute().replace(" ", "").upper()
 userCourse = inquirer.text(message="Enter your course: ").execute() #User course input
 
-#-- Semantic search for Course name--
-#Courses to search for semantically
+#Semantic search for Course name
 currentDir = os.path.dirname(__file__)
 csvPath = os.path.join(currentDir, "../data/extractedData.csv")
-dfCourse = pd.read_csv(csvPath, usecols=['course']) #get only the courses
+dfCourse = pd.read_csv(csvPath, usecols=['course']) #Get only the courses
 dfCourse["course"] = dfCourse["course"].fillna("")
 
 courses = dfCourse['course'].tolist() #Array of the courses to be used in semantic search
@@ -77,19 +74,14 @@ topk = 5 #Retrieve top 5 matches
 matchingCourses = semanticSearch(userCourse, topk)
 
 #Gather the other info for the matching courses
-
-#Import csv into SQL done in PostgreSQL
-
 #Read SQL table where the courses match result from semantic search
 
 connectionString = 'postgresql+pg8000://postgres:rosemary123@localhost:5432/uniRec'
 
-#query the whole sql table
-fullSqlDf = pd.read_sql('courses', connectionString)
+fullSqlDf = pd.read_sql('courses', connectionString) #Query whole SQL table
+matchingCoursesDf = fullSqlDf.loc[fullSqlDf['course'].isin(matchingCourses[0])] #Dataframe where courses match semantic search
 
-matchingCoursesDf = fullSqlDf.loc[fullSqlDf['course'].isin(matchingCourses[0])] #dataframe where courses match semantic search
-
-#-- Compare grade requirements
+#Compare grade requirements
 #Get the average tariff for each row
 matchingTariff = []
 
@@ -98,8 +90,8 @@ for row in matchingCoursesDf.itertuples(index=False):
     rowMax = row.maxtariff
     matchingTariff.append((rowMin + rowMax)/2)
 
-#-- Compare location
-#convert postcode to longitude and latitude with geopy
+#Compare location
+#Convert postcode to longitude and latitude with geopy
 regions = {
     "North East": "E12000001",
      "North West": "E12000002", 
@@ -125,7 +117,7 @@ matchingRegions = []
 for row in matchingCoursesDf.itertuples(index=False):
     #Get the GSS Code from the postcode
     rowPostcode = row.postcode
-    #get the area from the postcode
+    #Get the area from the postcode
     rowArea = re.search('[A-Z]+', rowPostcode).group()
     #Find the relevant csv file for GSS conversion
     rowCSV = f"ONSPD_FEB_2025_UK_{rowArea}.csv"
@@ -136,8 +128,8 @@ for row in matchingCoursesDf.itertuples(index=False):
 
     if len(rowGssDf) != 0: 
         rowGssVal = rowGssDf[0]
-        #Find region from GSS
 
+        #Find region from GSS
         if "E" in rowGssVal:
             #get region if in England
             rowRegion = [key for key, val in regions.items() if val == rowGssVal]
@@ -152,7 +144,8 @@ for row in matchingCoursesDf.itertuples(index=False):
         matchingRegions.append("No Preference")
 
 #Compare the user's region to the regions of the matching courses using k nearest neighbours
-#quantify the regions
+
+#Quantify the regions
 regionQuantifier = {
     "North East": [55, 1.9],
      "North West": [54, -2], 
@@ -172,7 +165,7 @@ regionQuantifier = {
 userCoord = regionQuantifier[userLocation]
 matchingCoord = list(map(lambda x: regionQuantifier[x], matchingRegions)) #Coordinates for the matching courses in the df
 
-#-- Compare the tariff points required
+#Compare the tariff points required
 #Convert user A Level grade to tariff
 grades = {"A*": 56, "A": 48, "B": 40, "C": 32, "D": 24, "E": 16, "U": 0}
         
@@ -182,7 +175,7 @@ parsedUserGrades = re.findall(r'A\*|[ABCDEU]', userGrades, re.IGNORECASE)
 for i in parsedUserGrades:
     userTariff += grades[i]
 
-#user vector is form [avg tariff, N, E]
+#User vector is form [avg tariff, N, E]
 userVector = [userTariff, userCoord[0], userCoord[1]]
 
 #Create vectors for the matching courses
@@ -190,11 +183,12 @@ matchingVectors = []
 
 matchingVectors = [[val, matchingCoord[index][0], matchingCoord[index][1]] for index, val in enumerate(matchingTariff)] #Create vectors [avg tariff, N, E]
 
-#Use unsupervised NN to compare the matchingVectors to userVector and get the top 5 recommendations
+#Use unsupervised nearest neighbours to compare the matchingVectors to userVector and get the top 5 recommendations
 #Use ball tree
 from sklearn.neighbors import BallTree
 tree = BallTree(matchingVectors, leaf_size=2, metric='euclidean')
 dist, ind = tree.query([userVector], k=3)
+
 #Display the top 5 matches
 
 #Write the matchingCourses to a csv
@@ -210,7 +204,6 @@ locationScores = [max(0, (1 - (i/5))) for i in locationDiff]
 
 semanticScores = matchingCourses[1]
 
-#Calculate overall match scores
 #Weights
 nameWeight = 0.7
 gradeWeight = 0.15

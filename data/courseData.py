@@ -5,9 +5,8 @@ import requests
 from lxml import etree
 import re
 import time
-#Gather the required data for each course
-#University, Course name, Subject, Grades, Location
 
+#Gather the required data for each course
 coursesInfo = []
 
 #Read the URLs for each course
@@ -18,7 +17,6 @@ with open(csvFilePath, "r") as f:
     id = 0
     courseURLs = csv.reader(f)
     for url in courseURLs:
-        print("running")
         minTariff = 0
         maxTariff = 0
         minALevel = ""
@@ -27,21 +25,20 @@ with open(csvFilePath, "r") as f:
         
         #Extract the data
         response = requests.get(url[0])
-        print(url[0])
         soup = BeautifulSoup(response.content, 'lxml')
 
         #University
         uniTag = soup.find('a', class_="font-yard link-secondary")
-        print(uniTag)
+        
         if uniTag != None:
             uni = uniTag.text
         else:
             uni = ""
-        print(uniTag)
+    
 
         #Course name
         courseNameTag = soup.find('h1', class_="word-wrap")
-        print(courseNameTag)
+        
         if courseNameTag != None:
             courseName = courseNameTag.text
         else:
@@ -54,16 +51,15 @@ with open(csvFilePath, "r") as f:
         if entryRequirementsBox != None:
             aLevelDiv = entryRequirementsBox.find('div', text="A level")
             if aLevelDiv == None:
-                #no A Levels
+                #No A Levels
                 aLevelGradeReq = ""
             else:
-                #need A Levels
+                #Need A Levels
                 #Get the A Level grade requirements
                 aLevelGradeReqTag = aLevelDiv.find_parent().find('strong')
                 aLevelGradeReq = aLevelGradeReqTag.text.strip('"')
 
                 #Seperate the min and max A level grades
-                
                 if '-' in aLevelGradeReq:
                     #Use RegEx to get grades
                     minAndMax = aLevelGradeReq.split(' - ')
@@ -75,13 +71,12 @@ with open(csvFilePath, "r") as f:
                     minALevel = maxALevel = re.findall('A\*|[ABCDE]', aLevelGradeReq)
 
                 #Convert to tariff
-
                 for i in minALevel:
                     minTariff += grades[i]
                 for i in maxALevel:
                     maxTariff += grades[i]
         else:
-            #no academic entry requirements
+            #No academic entry requirements
             aLevelGradeReq = ""
 
         #Location
@@ -97,7 +92,6 @@ with open(csvFilePath, "r") as f:
             postcode = ""
         
         #Write data to csv
-
         extractedDataFilePath = os.path.join(scriptDir, "extractedData.csv")
 
         #Gather data
@@ -112,11 +106,7 @@ with open(csvFilePath, "r") as f:
             'maxALevel': maxALevel
         }
 
-        print(courseInfo)
-
         coursesInfo.append(courseInfo)
-
-        # time.sleep(2)
 
 #Write extracted data to csv
 with open(extractedDataFilePath, mode="w", newline="", encoding="utf-8") as file:
