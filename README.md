@@ -15,9 +15,17 @@ From each course URL, the following was extracted from each course in courseData
 
 This data is stored in extractedData.csv
 
+PostgreSQL was used to create a SQL table - courses - of the data from extractedData.csv.
+
 # Machine Learning Model
 
-The machine learning model requires the user to input their preferred course, grades and location. A semantic search model is used with SentenceTransformer to obtain the names of the UCAS courses with the closest match to the user's preferred course. An unsupervised nearest-neighbour algorithm was used to compare the UCAS courses with the nearest grades and locations to the user's preferences.
+The machine learning model requires the user to input their preferred course, grades and location. A semantic search model is used with SentenceTransformer to obtain the names of the UCAS courses with the closest match to the user's preferred course. 
+
+An unsupervised nearest-neighbour algorithm was used to compare the UCAS courses with the nearest grades and locations to the user's preferences. The 'ONS Postcode Directory' (ONSPD) was used to convert each postcode to their respective longitude and latitude to allow for a Euclidean distance comparison for location. This model uses the dataset from February 2025.
+
+https://www.ons.gov.uk/methodology/geography/geographicalproducts/postcodeproducts
+
+The closest matching courses are stored in matchingCourses.csv.
 
 # Visualisation
 
